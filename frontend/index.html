@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub Rosa - Secure Secret Sharing</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --bg-color: #050505;
+            --card-bg: #111111;
+            --accent-color: #ff9e9e; /* Pink accent */
+            --text-color: #e0e0e0;
+            --text-muted: #888888;
+            --input-bg: #1a1a1a;
+            --success-color: #9effbf;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 650px;
+            width: 100%;
+        }
+
+        /* Typography */
+        h1 {
+            font-family: 'Times New Roman', serif;
+            color: var(--accent-color);
+            font-size: 3rem;
+            line-height: 1;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        h2 { font-size: 1.2rem; color: #fff; margin-top: 30px; }
+
+        p { margin-bottom: 20px; color: var(--text-muted); font-size: 1rem; }
+
+        a { color: var(--accent-color); text-decoration: none; border-bottom: 1px dotted var(--accent-color); transition: 0.2s; }
+        a:hover { color: #fff; border-bottom-style: solid; }
+
+        .highlight { color: #fff; font-weight: 500; }
+
+        /* Input Area */
+        textarea {
+            width: 100%;
+            height: 180px;
+            background-color: var(--input-bg);
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace; /* Monospace feels more secure/tech */
+            resize: none;
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
+
+        textarea:focus { outline: none; border-color: var(--accent-color); }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            display: block;
+            margin: 25px auto 0;
+            width: fit-content;
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 158, 158, 0.2); }
+        .btn:active { transform: translateY(0); }
+
+        /* Result Box */
+        .result-box {
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            word-break: break-all;
+            color: var(--accent-color);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px dashed #444;
+            user-select: all; /* Auto-selects text on click */
+        }
+
+        /* --- NEW SECTION: Security Explainer --- */
+        .security-section {
+            margin-top: 50px;
+            margin-bottom: 50px;
+            border-top: 1px solid #222;
+            padding-top: 30px;
+        }
+
+        .details-toggle {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 0.85rem; cursor: pointer; text-decoration: underline; padding: 0;
+            margin-top: 10px; display: inline-block;
+        }
+
+        .tech-details {
+            background: #111; padding: 15px; border-radius: 6px;
+            margin-top: 10px; font-size: 0.9rem; border-left: 2px solid var(--accent-color);
+        }
+
+        /* --- NEW SECTION: Affiliate Box --- */
+        .affiliate-box {
+            margin-top: 60px;
+            background: linear-gradient(145deg, #111 0%, #0d0d0d 100%);
+            border: 1px solid #222;
+            padding: 25px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .affiliate-icon { font-size: 2rem; } /* Placeholder for emoji or icon */
+
+        .affiliate-text strong { color: #fff; display: inline; }
+        .affiliate-text { color: var(--text-muted); line-height: 1.5; }
+
+        .affiliate-btn {
+            background: transparent; border: 1px solid #444; color: #fff;
+            padding: 8px 15px; border-radius: 6px; font-size: 0.85rem;
+            margin-top: 10px; display: inline-block;
+        }
+        .affiliate-btn:hover { border-color: #fff; background: #222; }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .loader {
+            border: 3px solid #222; border-top: 3px solid var(--accent-color);
+            border-radius: 50%; width: 25px; height: 25px;
+            animation: spin 1s linear infinite; margin: 0 auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container fade-in">
+
+    <div id="view-create">
+        <h1>If we can't read it,<br>we can't leak it.</h1>
+
+        <p>
+            Create a one-time link to share sensitive data.
+            The message is encrypted <span class="highlight">in your browser</span> before it ever leaves your device.
+        </p>
+
+        <textarea id="secret-input" placeholder="Paste your password, API key, or confession here..."></textarea>
+
+        <button class="btn" onclick="createSecret()">Create Secure Link</button>
+
+        <div class="affiliate-box">
+            <div class="affiliate-icon">🔒</div>
+            <div class="affiliate-text">
+                <strong>Protect the pipe, not just the message.</strong>
+                <br>
+                Sub Rosa secures your message, but your ISP can still see where you're sending it.
+                I use <strong>NordVPN</strong> to encrypt my entire connection.
+                <br>
+                <br>
+                <a href="https://nordvpn.com" target="_blank" class="affiliate-btn">Get NordVPN Deal & Support Sub Rosa</a>
+            </div>
+        </div>
+
+        <div class="security-section">
+            <h2>🛡 How is this 100% secure?</h2>
+            <p>
+                Think of it like this: <strong>We manufacture the lockbox, but you create the key.</strong>
+                <br>When you click "Create," your browser generates a random key and locks the message locally.
+                We store the locked box, but the key is only ever shown to <em>you</em> (in the link).
+                We physically cannot open your message because we never see the key.
+            </p>
+
+            <button class="details-toggle" onclick="toggleDetails()">Show technical details for geeks</button>
+
+            <div id="tech-details" class="tech-details hidden">
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><strong>Algorithm:</strong> AES-GCM (256-bit) via native Web Crypto API.</li>
+                    <li><strong>Key Storage:</strong> The key is passed in the URL Hash Fragment (`#`). Browsers <em>never</em> send the hash to the server.</li>
+                    <li><strong>Zero Knowledge:</strong> The server receives only the encrypted blob and the IV. It has zero computational way to decrypt the data.</li>
+                </ul>
+
+                This frontend is written in plain, non-obfuscated JavaScript. Check out the source
+                code and see the client-side encryption for yourself.
+            </div>
+        </div>
+    </div>
+
+    <div id="view-loading" class="hidden" style="text-align: center; margin-top: 100px;">
+        <div class="loader"></div>
+        <p style="margin-top: 20px;">Forging Lockbox...</p>
+    </div>
+
+    <div id="view-result" class="hidden" style="text-align: center;">
+        <h1 style="font-size: 2rem;">It is done.</h1>
+        <p>This link works exactly <strong>once</strong>.</p>
+
+        <div class="result-box" id="result-link"></div>
+
+        <button class="btn" onclick="copyLink()">Copy Link</button>
+        <br><br>
+        <button style="background:none; border:none; color:#666; cursor:pointer;" onclick="location.replace('/')">Send another</button>
+    </div>
+
+    <div id="view-read" class="hidden" style="text-align: center; margin-top: 15vh;">
+        <h1 style="font-size: 2.5rem;">Secure Message</h1>
+        <p>You have received a secure, one-time message.</p>
+        <p>Once you read this, it will be <strong>deleted forever</strong>.</p>
+        <button class="btn" onclick="revealMessage()">Read & Destroy</button>
+    </div>
+
+    <div id="view-message" class="hidden">
+        <h1 style="color: var(--success-color);">Message Decrypted</h1>
+
+        <textarea id="decrypted-output" readonly style="color: var(--success-color); border-color: var(--success-color);"></textarea>
+
+        <p style="text-align:center; color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">
+            This message no longer exists on any server. If you close this tab, it is gone forever.
+        </p>
+
+        <div class="affiliate-box">
+            <div class="affiliate-icon">☕️</div>
+            <div class="affiliate-text">
+                <strong>Did this tool help you?</strong>
+                <br>
+                Sub Rosa is free, open-source, and maintained by one developer.
+                I don't run ads or track you.
+                <br>
+                <br>
+                If you want to support the project (and upgrade your own privacy), considering checking out <strong>NordVPN</strong> via my link below. It buys me a coffee at no cost to you.
+                <br>
+                <br>
+                <a href="https://nordvpn.com/" target="_blank" class="affiliate-btn">Check out NordVPN</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = "https://sub-rosa.dev/v1";
+
+    function handleRouting() {
+        if (window.location.hash.length > 1) {
+            const currentView = document.querySelector('.hidden:not(.hidden)');
+            if (document.getElementById('view-message').classList.contains('hidden') === false) {
+                return;
+            }
+
+            showView('view-read');
+        } else {
+            showView('view-create');
+        }
+    }
+
+    window.addEventListener('load', handleRouting);
+
+    window.addEventListener('hashchange', handleRouting);
+
+    function toggleDetails() {
+        const el = document.getElementById('tech-details');
+        const btn = document.querySelector('.details-toggle');
+        if (el.classList.contains('hidden')) {
+            el.classList.remove('hidden');
+            btn.innerText = "Hide technical details";
+        } else {
+            el.classList.add('hidden');
+            btn.innerText = "Show technical details for geeks";
+        }
+    }
+
+    async function generateKey() {
+        return await window.crypto.subtle.generateKey(
+            { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]
+        );
+    }
+
+    async function encryptMessage(message, key) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(message);
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+        const encryptedData = await window.crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv }, key, data
+        );
+
+        const exportedKey = await window.crypto.subtle.exportKey("raw", key);
+
+        return {
+            iv: bufferToBase64(iv),
+            content: bufferToBase64(encryptedData),
+            keyString: bufferToBase64(exportedKey)
+        };
+    }
+
+    async function decryptMessage(encryptedContentBase64, ivBase64, keyBase64) {
+        const keyBuffer = base64ToBuffer(keyBase64);
+        const iv = base64ToBuffer(ivBase64);
+        const content = base64ToBuffer(encryptedContentBase64);
+
+        const key = await window.crypto.subtle.importKey(
+            "raw", keyBuffer, { name: "AES-GCM" }, true, ["decrypt"]
+        );
+
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+            { name: "AES-GCM", iv: iv }, key, content
+        );
+
+        const decoder = new TextDecoder();
+        return decoder.decode(decryptedBuffer);
+    }
+
+    async function createSecret() {
+        const text = document.getElementById('secret-input').value;
+        if (!text) return alert("Please enter a message.");
+
+        showView('view-loading');
+
+        try {
+            const key = await generateKey();
+            const result = await encryptMessage(text, key);
+
+            const response = await fetch(`${API_URL}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    encryptedData: result.content,
+                    iv: result.iv
+                })
+            });
+
+            if (!response.ok) throw new Error("Server error");
+            const data = await response.json();
+
+            const encodedId = encodeURIComponent(data.id)
+            const encodedKey = encodeURIComponent(result.keyString)
+
+            const magicLink = `${window.location.origin}/#id=${encodedId}&key=${encodedKey}`;
+
+            document.getElementById('result-link').innerText = magicLink;
+            showView('view-result');
+        } catch (e) {
+            console.error(e);
+            alert("Error: " + e.message);
+            showView('view-create');
+        }
+    }
+
+    async function revealMessage() {
+        showView('view-loading');
+        try {
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const id = params.get('id');
+            const key = params.get('key');
+
+            if (!id || !key) throw new Error("Invalid link");
+
+            const response = await fetch(`${API_URL}/message/${id}`, { method: 'GET' });
+
+            if (!response.ok) {
+                if(response.status === 404) throw new Error("Message not found or already destroyed.");
+                throw new Error("Server error");
+            }
+
+            const data = await response.json();
+
+            const plainText = await decryptMessage(data.encryptedData, data.iv, key);
+
+            document.getElementById('decrypted-output').value = plainText;
+            showView('view-message');
+
+            history.replaceState(null, null, ' ');
+
+        } catch (e) {
+            alert(e.message);
+            showView('view-create');
+        }
+    }
+
+    function copyLink() {
+        const text = document.getElementById('result-link').innerText;
+
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.querySelector('#view-result .btn');
+            const originalText = "Copy Link";
+
+            btn.innerText = "Copied!";
+            btn.style.backgroundColor = "#9effbf";
+            btn.style.color = "#000";
+
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "";
+                btn.style.color = "";
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+
+    function showView(viewId) {
+        ['view-create', 'view-loading', 'view-result', 'view-read', 'view-message'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function bufferToBase64(buf) {
+        let binary = '';
+        const bytes = new Uint8Array(buf);
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        return window.btoa(binary);
+    }
+
+    function base64ToBuffer(base64) {
+        const binary_string = window.atob(base64);
+        const bytes = new Uint8Array(binary_string.length);
+        for (let i = 0; i < binary_string.length; i++) bytes[i] = binary_string.charCodeAt(i);
+        return bytes.buffer;
+    }
+</script>
+</body>
+</html>

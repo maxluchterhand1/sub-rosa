@@ -1,0 +1,11 @@
+node_modules
+frontend
+.idea
+.husku
+.vscode
+.git
+.gitignore
+.nvmrc
+.prettier*
+.eslint.config.js
+vitest.config.js
