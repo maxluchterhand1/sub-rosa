@@ -3,6 +3,8 @@
 
 Sub Rosa is a secure, serverless secret-sharing application built on Google Cloud Platform (GCP). It generates one-time-use links for sensitive information. The unique architecture ensures that the encryption key never touches the database, guaranteeing that even the server administrators cannot read the stored secrets.
 
+Live version hosted at https://sub-rosa.dev
+
 ### 🏗 Repository Structure
 
 This is a monorepo containing the frontend, backend, and infrastructure code.
