@@ -20,12 +20,12 @@ resource "google_project_service" "enabled_apis" {
     "iam.googleapis.com",
     "cloudbuild.googleapis.com"
   ])
-  service = each.key
+  service            = each.key
   disable_on_destroy = false
 }
 
 resource "google_service_account" "app_sa" {
-  account_id = "sub-rosa-backend-sa"
+  account_id   = "sub-rosa-backend-sa"
   display_name = "Sub Rosa Backend Service Account"
 }
 
@@ -36,14 +36,14 @@ resource "google_project_iam_member" "user" {
 }
 
 resource "google_firestore_database" "database" {
-  project = data.google_project.project.project_id
-  name        = "sub-rosa"
-  location_id = var.region
-  type        = "FIRESTORE_NATIVE"
-  concurrency_mode = "OPTIMISTIC"
+  project                     = data.google_project.project.project_id
+  name                        = "sub-rosa"
+  location_id                 = var.region
+  type                        = "FIRESTORE_NATIVE"
+  concurrency_mode            = "OPTIMISTIC"
   app_engine_integration_mode = "DISABLED"
-  deletion_policy = "DELETE"
-  depends_on = [google_project_service.enabled_apis]
+  deletion_policy             = "DELETE"
+  depends_on                  = [google_project_service.enabled_apis]
 }
 
 resource "google_artifact_registry_repository" "image_repo" {
@@ -52,9 +52,9 @@ resource "google_artifact_registry_repository" "image_repo" {
 }
 
 resource "google_cloud_run_v2_service" "app_service" {
-  name     = "sub-rosa-${var.region}"
-  location = var.region
-  ingress = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  name                = "sub-rosa-${var.region}"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
   deletion_protection = false
 
   template {
@@ -64,18 +64,18 @@ resource "google_cloud_run_v2_service" "app_service" {
       image = var.service_image
 
       env {
-        name = "GCP_PROJECT_ID"
+        name  = "GCP_PROJECT_ID"
         value = data.google_project.project.project_id
       }
 
       env {
-        name = "FIRESTORE_DB_NAME"
+        name  = "FIRESTORE_DB_NAME"
         value = google_firestore_database.database.name
       }
 
       resources {
         limits = {
-          cpu = "1000m"
+          cpu    = "1000m"
           memory = "512Mi"
         }
       }
@@ -91,8 +91,8 @@ resource "google_cloud_run_v2_service" "app_service" {
 }
 
 resource "google_cloud_run_service_iam_member" "public_access" {
-  member  = "allUsers"
-  role    = "roles/run.invoker"
-  service = google_cloud_run_v2_service.app_service.name
+  member   = "allUsers"
+  role     = "roles/run.invoker"
+  service  = google_cloud_run_v2_service.app_service.name
   location = google_cloud_run_v2_service.app_service.location
 }
